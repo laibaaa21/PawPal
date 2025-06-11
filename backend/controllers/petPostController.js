@@ -31,15 +31,84 @@ const createPost = async (req, res) => {
   }
 };
 
-// @desc    Get all posts
+// @desc    Get all posts with filters
 // @route   GET /api/posts
 // @access  Public
 const getPosts = async (req, res) => {
   try {
-    const posts = await PetPost.find()
-      .populate('user', 'username profilePicture')
-      .sort({ createdAt: -1 });
-    res.json(posts);
+    const {
+      breed,
+      tags,
+      search,
+      sort = '-createdAt', // default sort by newest
+      page = 1,
+      limit = 10
+    } = req.query;
+
+    // Build filter object
+    const filter = {};
+
+    if (breed) {
+      filter.breed = { $regex: breed, $options: 'i' }; // case-insensitive search
+    }
+
+    if (tags) {
+      const tagArray = tags.split(',').map(tag => tag.trim());
+      filter.tags = { $in: tagArray };
+    }
+
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { content: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    // Build sort object
+    let sortOption = {};
+    switch (sort) {
+      case 'likes':
+        sortOption = { 'likes.length': -1, createdAt: -1 };
+        break;
+      case 'oldest':
+        sortOption = { createdAt: 1 };
+        break;
+      default: // 'newest'
+        sortOption = { createdAt: -1 };
+    }
+
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+
+    // Execute query
+    const [posts, total] = await Promise.all([
+      PetPost.find(filter)
+        .populate('user', 'username profilePicture')
+        .sort(sortOption)
+        .skip(skip)
+        .limit(Number(limit)),
+      PetPost.countDocuments(filter)
+    ]);
+
+    // Get unique breeds and tags for filters
+    const [breeds, allTags] = await Promise.all([
+      PetPost.distinct('breed'),
+      PetPost.distinct('tags')
+    ]);
+
+    res.json({
+      posts,
+      pagination: {
+        total,
+        pages: Math.ceil(total / limit),
+        page: Number(page),
+        limit: Number(limit)
+      },
+      filters: {
+        breeds,
+        tags: allTags
+      }
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error fetching posts' });

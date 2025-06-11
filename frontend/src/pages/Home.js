@@ -1,8 +1,11 @@
 import React from 'react';
-import { Box, Typography, Container, Paper } from '@mui/material';
-import PetsIcon from '@mui/icons-material/Pets';
+import { Container, Typography, Button, Box } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Home = () => {
+  const { user } = useAuth();
+
   return (
     <Container maxWidth="md">
       <Box
@@ -11,59 +14,47 @@ const Home = () => {
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          textAlign: 'center',
         }}
       >
-        <PetsIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
-        <Typography
-          component="h1"
-          variant="h2"
-          align="center"
-          color="text.primary"
-          gutterBottom
-        >
+        <Typography variant="h2" component="h1" gutterBottom>
           Welcome to PawPal
         </Typography>
-        <Typography
-          variant="h5"
-          align="center"
-          color="text.secondary"
-          paragraph
-        >
-          A community for pet lovers to share stories, photos, and connect with
-          other pet enthusiasts.
+        <Typography variant="h5" color="text.secondary" paragraph>
+          Share your pet moments and connect with other pet lovers
         </Typography>
-
-        <Box sx={{ mt: 4 }}>
-          <Paper
-            elevation={3}
-            sx={{
-              p: 3,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-            }}
+        <Box sx={{ mt: 4, display: 'flex', gap: 2 }}>
+          <Button
+            component={RouterLink}
+            to="/gallery"
+            variant="contained"
+            color="primary"
+            size="large"
           >
-            <Typography variant="h6" gutterBottom>
-              🐾 Share Your Pet Stories
-            </Typography>
-            <Typography align="center" paragraph>
-              Join our community to:
-            </Typography>
-            <Box sx={{ textAlign: 'left', width: '100%', maxWidth: 400 }}>
-              <Typography paragraph>
-                • Post photos and stories of your pets
-              </Typography>
-              <Typography paragraph>
-                • Connect with other pet owners
-              </Typography>
-              <Typography paragraph>
-                • Find pets by breed or interests
-              </Typography>
-              <Typography>
-                • Save your favorite pet posts
-              </Typography>
-            </Box>
-          </Paper>
+            Browse Pet Gallery
+          </Button>
+          {!user && (
+            <Button
+              component={RouterLink}
+              to="/register"
+              variant="outlined"
+              color="primary"
+              size="large"
+            >
+              Join Now
+            </Button>
+          )}
+          {user && (
+            <Button
+              component={RouterLink}
+              to="/posts/create"
+              variant="outlined"
+              color="primary"
+              size="large"
+            >
+              Create Post
+            </Button>
+          )}
         </Box>
       </Box>
     </Container>

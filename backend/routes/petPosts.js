@@ -10,7 +10,7 @@ const {
   addComment,
 } = require('../controllers/petPostController');
 const { protect } = require('../middleware/authMiddleware');
-const upload = require('../utils/upload');
+const { upload } = require('../utils/upload');
 
 // Public routes
 router.get('/', getPosts);
