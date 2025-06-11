@@ -85,7 +85,7 @@ const CreatePostForm = ({ onPostCreated }) => {
         formDataToSend.append('image', image);
       }
 
-      await createPost(formDataToSend);
+      const newPost = await createPost(formDataToSend);
       
       // Reset form
       setFormData({
@@ -99,10 +99,11 @@ const CreatePostForm = ({ onPostCreated }) => {
       setShowEmojiPicker(false);
 
       if (onPostCreated) {
-        onPostCreated();
+        onPostCreated(newPost);
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Error creating post');
+      console.error('Error creating post:', err);
     } finally {
       setLoading(false);
     }

@@ -193,7 +193,7 @@ const deletePost = async (req, res) => {
       return res.status(401).json({ message: 'User not authorized' });
     }
 
-    await post.remove();
+    await PetPost.findByIdAndDelete(req.params.id);
     res.json({ message: 'Post removed' });
   } catch (error) {
     console.error(error);

@@ -158,6 +158,18 @@ const Profile = () => {
     }
   };
 
+  const handlePostDelete = async (postId) => {
+    setUserPosts(prevPosts => prevPosts.filter(post => post._id !== postId));
+  };
+
+  const handlePostUpdate = async (updatedPost) => {
+    setUserPosts(prevPosts =>
+      prevPosts.map(post =>
+        post._id === updatedPost._id ? updatedPost : post
+      )
+    );
+  };
+
   if (loading) {
     return (
       <Box
@@ -273,26 +285,30 @@ const Profile = () => {
                 <PostCard
                   key={post._id}
                   post={post}
-                  onPostUpdate={fetchUserPosts}
+                  onDelete={handlePostDelete}
+                  onUpdate={handlePostUpdate}
                 />
               ))
             ) : (
-              <Typography align="center" color="textSecondary">
+              <Typography variant="body1" align="center" color="text.secondary">
                 No posts yet
               </Typography>
             )
-          ) : savedPosts.length > 0 ? (
-            savedPosts.map((post) => (
-              <PostCard
-                key={post._id}
-                post={post}
-                onPostUpdate={fetchSavedPosts}
-              />
-            ))
           ) : (
-            <Typography align="center" color="textSecondary">
-              No saved posts
-            </Typography>
+            savedPosts.length > 0 ? (
+              savedPosts.map((post) => (
+                <PostCard
+                  key={post._id}
+                  post={post}
+                  onDelete={handlePostDelete}
+                  onUpdate={handlePostUpdate}
+                />
+              ))
+            ) : (
+              <Typography variant="body1" align="center" color="text.secondary">
+                No saved posts
+              </Typography>
+            )
           )}
         </Box>
       </Box>

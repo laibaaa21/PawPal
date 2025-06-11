@@ -24,10 +24,10 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // Routes
 const authRoutes = require('./routes/auth');
-const postRoutes = require('./routes/posts');
+const petPostRoutes = require('./routes/petPosts');
 
 app.use('/api/auth', authRoutes);
-app.use('/api/posts', postRoutes);
+app.use('/api/posts', petPostRoutes);
 
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

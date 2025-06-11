@@ -37,7 +37,7 @@ export const getUserProfile = async () => {
 
 // Post endpoints
 export const createPost = async (postData) => {
-  const response = await api.post('/posts', postData, {
+  const response = await api.post('/posts/create', postData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
