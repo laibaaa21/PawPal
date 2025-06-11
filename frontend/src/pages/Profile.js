@@ -28,6 +28,7 @@ import {
   getSavedPosts,
 } from '../services/api';
 import PostCard from '../components/posts/PostCard';
+import { motion } from 'framer-motion';
 
 const Profile = () => {
   const { user, login } = useAuth();
@@ -186,6 +187,28 @@ const Profile = () => {
     setUserPosts(prevPosts => [newPost, ...prevPosts]);
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: 'spring',
+        stiffness: 300,
+      },
+    },
+  };
+
   if (loading) {
     return (
       <Box
@@ -212,47 +235,57 @@ const Profile = () => {
   }
 
   return (
-    <Container maxWidth="md">
+    <Container
+      component={motion.div}
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      maxWidth="lg"
+      sx={{ py: 4 }}
+    >
+      <Box
+        component={motion.div}
+        variants={itemVariants}
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          mb: 6,
+        }}
+      >
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          transition={{ type: 'spring', stiffness: 300 }}
+        >
+          <Avatar
+            src={user?.profilePicture}
+            alt={user?.username}
+            sx={{
+              width: 150,
+              height: 150,
+              mb: 2,
+              border: '4px solid #fff',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            }}
+          />
+        </motion.div>
+        <Typography variant="h5" gutterBottom>
+          {user?.username}
+        </Typography>
+        <Typography color="textSecondary" paragraph>
+          {user?.email}
+        </Typography>
+        <Button
+          variant="outlined"
+          onClick={() => setPasswordDialogOpen(true)}
+          sx={{ mt: 1 }}
+        >
+          Change Password
+        </Button>
+      </Box>
+
       <Paper elevation={3} sx={{ mt: 4, p: 3 }}>
         <Grid container spacing={3}>
-          <Grid item xs={12} md={4} sx={{ textAlign: 'center' }}>
-            <Box sx={{ position: 'relative', display: 'inline-block' }}>
-              <Avatar
-                src={profile?.profilePicture}
-                alt={user?.username}
-                sx={{
-                  width: 150,
-                  height: 150,
-                  mx: 'auto',
-                  mb: 2,
-                }}
-              />
-              <IconButton
-                sx={{
-                  position: 'absolute',
-                  bottom: 16,
-                  right: -8,
-                  bgcolor: 'background.paper',
-                }}
-                onClick={() => setEditDialogOpen(true)}
-              >
-                <Edit />
-              </IconButton>
-            </Box>
-            <Typography variant="h5" gutterBottom>
-              {user?.username}
-            </Typography>
-            <Typography color="textSecondary" paragraph>
-              {user?.email}
-            </Typography>
-            <Button
-              variant="outlined"
-              onClick={() => setPasswordDialogOpen(true)}
-              sx={{ mt: 1 }}
-            >
-              Change Password
-            </Button>
-          </Grid>
           <Grid item xs={12} md={8}>
             <Typography variant="h6" gutterBottom>
               Bio
