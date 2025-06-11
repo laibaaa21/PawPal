@@ -1,16 +1,43 @@
 const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const path = require('path');
-const cloudinary = require('../config/cloudinary');
 const fs = require('fs');
 
-// Configure multer for handling file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Configure Multer's storage to use Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'pawpal',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif'],
+    transformation: [{ width: 1000, height: 1000, crop: 'limit' }],
   },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
+});
+
+// Create multer upload middleware
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB max file size
+  },
+  fileFilter: (req, file, cb) => {
+    // Allow only images
+    const filetypes = /jpeg|jpg|png|gif/;
+    const mimetype = filetypes.test(file.mimetype);
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error('Only image files are allowed!'));
+  },
 });
 
 // Create uploads directory if it doesn't exist
@@ -18,46 +45,22 @@ if (!fs.existsSync('uploads')) {
   fs.mkdirSync('uploads');
 }
 
-// File filter
-const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/')) {
-    cb(null, true);
-  } else {
-    cb(new Error('Not an image! Please upload only images.'), false);
-  }
-};
-
-// Initialize multer
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  }
-});
-
-// Function to upload file to Cloudinary
+// Function to upload to Cloudinary directly
 const uploadToCloudinary = async (filePath) => {
   try {
     const result = await cloudinary.uploader.upload(filePath, {
       folder: 'pawpal',
-      use_filename: true
+      transformation: [{ width: 1000, height: 1000, crop: 'limit' }],
     });
-
-    // Remove file from local storage
-    fs.unlinkSync(filePath);
-    
     return result;
   } catch (error) {
-    // Remove file from local storage in case of error
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
+    console.error('Error uploading to Cloudinary:', error);
     throw error;
   }
 };
 
 module.exports = {
   upload,
-  uploadToCloudinary
+  uploadToCloudinary,
+  cloudinary,
 }; 

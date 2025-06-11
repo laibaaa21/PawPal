@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
 import {
   Card,
   CardHeader,
@@ -13,25 +12,28 @@ import {
   Chip,
   Menu,
   MenuItem,
+  TextField,
+  Button,
 } from '@mui/material';
 import {
   Favorite,
   FavoriteBorder,
   MoreVert,
-  BookmarkBorder,
-  Bookmark,
+  Comment,
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
-import { savePost, unsavePost, likePost, unlikePost } from '../../services/api';
+import { formatDistanceToNow } from 'date-fns';
+import api from '../../services/api';
 
-const PostCard = ({ post, onPostUpdate, onDeletePost }) => {
+const PostCard = ({ post, onDelete, onUpdate }) => {
   const { user } = useAuth();
   const [anchorEl, setAnchorEl] = useState(null);
-  const [isLiked, setIsLiked] = useState(post.likes?.includes(user?._id));
-  const [isSaved, setIsSaved] = useState(post.savedBy?.includes(user?._id));
-  const [likesCount, setLikesCount] = useState(post.likes?.length || 0);
+  const [showComments, setShowComments] = useState(false);
+  const [comment, setComment] = useState('');
+  const [liked, setLiked] = useState(post?.likes?.includes(user?._id) || false);
+  const [likesCount, setLikesCount] = useState(post?.likes?.length || 0);
 
-  const handleMenuClick = (event) => {
+  const handleMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
   };
 
@@ -39,92 +41,80 @@ const PostCard = ({ post, onPostUpdate, onDeletePost }) => {
     setAnchorEl(null);
   };
 
-  const handleDelete = () => {
-    handleMenuClose();
-    onDeletePost(post._id);
-  };
-
-  const handleEdit = () => {
-    handleMenuClose();
-    // Navigate to edit page or open edit modal
-  };
-
-  const handleLikeToggle = async () => {
+  const handleDelete = async () => {
     try {
-      if (isLiked) {
-        await unlikePost(post._id);
-        setLikesCount(prev => prev - 1);
-      } else {
-        await likePost(post._id);
-        setLikesCount(prev => prev + 1);
-      }
-      setIsLiked(!isLiked);
-      if (onPostUpdate) onPostUpdate();
+      await api.delete(`/posts/${post._id}`);
+      onDelete(post._id);
+    } catch (error) {
+      console.error('Error deleting post:', error);
+    }
+    handleMenuClose();
+  };
+
+  const handleLike = async () => {
+    try {
+      await api.put(`/posts/${post._id}/like`);
+      setLiked(!liked);
+      setLikesCount(liked ? likesCount - 1 : likesCount + 1);
     } catch (error) {
       console.error('Error toggling like:', error);
     }
   };
 
-  const handleSaveToggle = async () => {
+  const handleComment = async (e) => {
+    e.preventDefault();
+    if (!comment.trim()) return;
+
     try {
-      if (isSaved) {
-        await unsavePost(post._id);
-      } else {
-        await savePost(post._id);
-      }
-      setIsSaved(!isSaved);
-      if (onPostUpdate) onPostUpdate();
+      const response = await api.post(`/posts/${post._id}/comment`, {
+        content: comment,
+      });
+      onUpdate(response.data);
+      setComment('');
     } catch (error) {
-      console.error('Error toggling save:', error);
+      console.error('Error adding comment:', error);
     }
   };
 
+  if (!post) {
+    return null;
+  }
+
   return (
-    <Card sx={{ maxWidth: '100%', mb: 2 }}>
+    <Card sx={{ maxWidth: 600, mb: 2, mx: 'auto' }}>
       <CardHeader
         avatar={
           <Avatar
-            component={RouterLink}
-            to={`/profile/${post.user._id}`}
-            src={post.user.profilePicture}
-            alt={post.user.username}
+            src={post.user?.profilePicture}
+            alt={post.user?.username}
           />
         }
         action={
-          post.user._id === user?._id && (
-            <>
-              <IconButton onClick={handleMenuClick}>
-                <MoreVert />
-              </IconButton>
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleMenuClose}
-              >
-                <MenuItem onClick={handleEdit}>Edit</MenuItem>
-                <MenuItem onClick={handleDelete}>Delete</MenuItem>
-              </Menu>
-            </>
+          post.user?._id === user?._id && (
+            <IconButton onClick={handleMenuOpen}>
+              <MoreVert />
+            </IconButton>
           )
         }
-        title={
-          <Typography
-            component={RouterLink}
-            to={`/profile/${post.user._id}`}
-            sx={{ textDecoration: 'none', color: 'inherit' }}
-          >
-            {post.user.username}
-          </Typography>
-        }
-        subheader={new Date(post.createdAt).toLocaleDateString()}
+        title={post.user?.username || 'Unknown User'}
+        subheader={post.createdAt ? formatDistanceToNow(new Date(post.createdAt), { addSuffix: true }) : ''}
       />
-      <CardMedia
-        component="img"
-        height="400"
-        image={post.imageUrl}
-        alt={post.title}
-        sx={{ objectFit: 'cover' }}
-      />
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={handleDelete}>Delete</MenuItem>
+      </Menu>
+      {post.imageUrl && (
+        <CardMedia
+          component="img"
+          height="300"
+          image={post.imageUrl}
+          alt={post.title}
+          sx={{ objectFit: 'cover' }}
+        />
+      )}
       <CardContent>
         <Typography variant="h6" gutterBottom>
           {post.title}
@@ -132,34 +122,68 @@ const PostCard = ({ post, onPostUpdate, onDeletePost }) => {
         <Typography variant="body2" color="text.secondary" paragraph>
           {post.content}
         </Typography>
-        <Box sx={{ mb: 1 }}>
-          <Chip
-            label={post.breed}
-            variant="outlined"
-            size="small"
-            sx={{ mr: 1 }}
-          />
-          {post.tags.map((tag) => (
+        <Box sx={{ mb: 2 }}>
+          {post.breed && (
             <Chip
-              key={tag}
+              label={post.breed}
+              color="primary"
+              size="small"
+              sx={{ mr: 1 }}
+            />
+          )}
+          {post.tags?.map((tag, index) => (
+            <Chip
+              key={index}
               label={tag}
               size="small"
               sx={{ mr: 1 }}
             />
           ))}
         </Box>
+        <Typography variant="body2" color="text.secondary">
+          {likesCount} likes • {post.comments?.length || 0} comments
+        </Typography>
       </CardContent>
       <CardActions disableSpacing>
-        <IconButton onClick={handleLikeToggle}>
-          {isLiked ? <Favorite color="error" /> : <FavoriteBorder />}
+        <IconButton onClick={handleLike} color={liked ? 'primary' : 'default'}>
+          {liked ? <Favorite /> : <FavoriteBorder />}
         </IconButton>
-        <Typography variant="body2" sx={{ mr: 2 }}>
-          {likesCount}
-        </Typography>
-        <IconButton onClick={handleSaveToggle}>
-          {isSaved ? <Bookmark color="primary" /> : <BookmarkBorder />}
+        <IconButton onClick={() => setShowComments(!showComments)}>
+          <Comment />
         </IconButton>
       </CardActions>
+      {showComments && (
+        <CardContent>
+          <Box component="form" onSubmit={handleComment} sx={{ mb: 2 }}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Add a comment..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              sx={{ mb: 1 }}
+            />
+            <Button
+              type="submit"
+              variant="contained"
+              size="small"
+              disabled={!comment.trim()}
+            >
+              Post
+            </Button>
+          </Box>
+          {post.comments?.map((comment, index) => (
+            <Box key={index} sx={{ mb: 1 }}>
+              <Typography variant="subtitle2" component="span">
+                {comment.user?.username || 'Unknown User'}
+              </Typography>
+              <Typography variant="body2" component="span" sx={{ ml: 1 }}>
+                {comment.content}
+              </Typography>
+            </Box>
+          ))}
+        </CardContent>
+      )}
     </Card>
   );
 };
