@@ -253,6 +253,22 @@ const addComment = async (req, res) => {
   }
 };
 
+// @desc    Get user's posts
+// @route   GET /api/posts/user/:userId
+// @access  Public
+const getUserPosts = async (req, res) => {
+  try {
+    const posts = await PetPost.find({ user: req.params.userId })
+      .populate('user', 'username profilePicture')
+      .sort({ createdAt: -1 });
+
+    res.json(posts);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error fetching user posts' });
+  }
+};
+
 module.exports = {
   createPost,
   getPosts,
@@ -261,4 +277,5 @@ module.exports = {
   deletePost,
   toggleLike,
   addComment,
+  getUserPosts,
 }; 

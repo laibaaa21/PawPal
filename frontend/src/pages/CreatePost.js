@@ -6,8 +6,9 @@ import CreatePostForm from '../components/posts/CreatePostForm';
 const CreatePost = () => {
   const navigate = useNavigate();
 
-  const handlePostCreated = () => {
-    navigate('/profile');
+  const handlePostCreated = (newPost) => {
+    // Navigate to profile page with the new post data
+    navigate('/profile', { state: { newPost } });
   };
 
   return (

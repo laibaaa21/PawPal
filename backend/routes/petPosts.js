@@ -8,6 +8,7 @@ const {
   deletePost,
   toggleLike,
   addComment,
+  getUserPosts,
 } = require('../controllers/petPostController');
 const { protect } = require('../middleware/authMiddleware');
 const { upload } = require('../utils/upload');
@@ -15,6 +16,7 @@ const { upload } = require('../utils/upload');
 // Public routes
 router.get('/', getPosts);
 router.get('/:id', getPost);
+router.get('/user/:userId', getUserPosts);
 
 // Protected routes
 router.post('/create', protect, upload.single('image'), createPost);

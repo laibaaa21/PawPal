@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import { Edit, PhotoCamera } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
+import { useLocation } from 'react-router-dom';
 import {
   getUserProfile,
   updateProfile,
@@ -30,6 +31,7 @@ import PostCard from '../components/posts/PostCard';
 
 const Profile = () => {
   const { user, login } = useAuth();
+  const location = useLocation();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -56,6 +58,15 @@ const Profile = () => {
     fetchSavedPosts();
   }, []);
 
+  // Handle new post from navigation state
+  useEffect(() => {
+    if (location.state?.newPost) {
+      setUserPosts(prevPosts => [location.state.newPost, ...prevPosts]);
+      // Clear the state to prevent duplicate additions on re-render
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
   const fetchProfile = async () => {
     try {
       const data = await getUserProfile();
@@ -75,9 +86,10 @@ const Profile = () => {
   const fetchUserPosts = async () => {
     try {
       const posts = await getUserPosts(user._id);
-      setUserPosts(posts);
+      setUserPosts(Array.isArray(posts) ? posts : []);
     } catch (err) {
       console.error('Error fetching user posts:', err);
+      setUserPosts([]);
     }
   };
 
@@ -168,6 +180,10 @@ const Profile = () => {
         post._id === updatedPost._id ? updatedPost : post
       )
     );
+  };
+
+  const handlePostCreated = (newPost) => {
+    setUserPosts(prevPosts => [newPost, ...prevPosts]);
   };
 
   if (loading) {
