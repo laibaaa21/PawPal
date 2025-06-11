@@ -25,12 +25,12 @@ const Navbar = () => {
     setAnchorElNav(event.currentTarget);
   };
 
-  const handleOpenUserMenu = (event) => {
-    setAnchorElUser(event.currentTarget);
-  };
-
   const handleCloseNavMenu = () => {
     setAnchorElNav(null);
+  };
+
+  const handleOpenUserMenu = (event) => {
+    setAnchorElUser(event.currentTarget);
   };
 
   const handleCloseUserMenu = () => {
@@ -43,23 +43,16 @@ const Navbar = () => {
     handleCloseUserMenu();
   };
 
-  const pages = [
-    { title: 'Home', path: '/' },
-    { title: 'Pet Gallery', path: '/gallery' },
-    ...(user ? [{ title: 'Create Post', path: '/posts/create' }] : []),
-  ];
-
-  const settings = [
-    { title: 'Profile', action: () => navigate('/profile') },
-    { title: 'Logout', action: handleLogout },
-  ];
-
   return (
     <AppBar position="sticky">
       <Container maxWidth="xl">
         <Toolbar disableGutters>
-          {/* Desktop Logo */}
-          <Pets sx={{ display: { xs: 'none', md: 'flex' }, mr: 1 }} />
+          {/* Logo - Desktop */}
+          <Pets sx={{ 
+            display: { xs: 'none', md: 'flex' }, 
+            mr: 1,
+            color: 'text.primary'
+          }} />
           <Typography
             variant="h6"
             noWrap
@@ -69,11 +62,11 @@ const Navbar = () => {
               mr: 2,
               display: { xs: 'none', md: 'flex' },
               fontWeight: 700,
-              color: 'inherit',
+              color: 'text.primary',
               textDecoration: 'none',
             }}
           >
-            PawPal
+            PetPal
           </Typography>
 
           {/* Mobile Menu */}
@@ -106,24 +99,28 @@ const Navbar = () => {
                 display: { xs: 'block', md: 'none' },
               }}
             >
-              {pages.map((page) => (
-                <MenuItem
-                  key={page.title}
-                  onClick={() => {
-                    navigate(page.path);
-                    handleCloseNavMenu();
-                  }}
-                >
-                  <Typography textAlign="center">{page.title}</Typography>
+              <MenuItem component={Link} to="/" onClick={handleCloseNavMenu}>
+                <Typography textAlign="center">Home</Typography>
+              </MenuItem>
+              <MenuItem component={Link} to="/gallery" onClick={handleCloseNavMenu}>
+                <Typography textAlign="center">Explore</Typography>
+              </MenuItem>
+              {user && (
+                <MenuItem component={Link} to="/posts/create" onClick={handleCloseNavMenu}>
+                  <Typography textAlign="center">Create</Typography>
                 </MenuItem>
-              ))}
+              )}
             </Menu>
           </Box>
 
-          {/* Mobile Logo */}
-          <Pets sx={{ display: { xs: 'flex', md: 'none' }, mr: 1 }} />
+          {/* Logo - Mobile */}
+          <Pets sx={{ 
+            display: { xs: 'flex', md: 'none' }, 
+            mr: 1,
+            color: 'text.primary'
+          }} />
           <Typography
-            variant="h5"
+            variant="h6"
             noWrap
             component={Link}
             to="/"
@@ -132,26 +129,56 @@ const Navbar = () => {
               display: { xs: 'flex', md: 'none' },
               flexGrow: 1,
               fontWeight: 700,
-              color: 'inherit',
+              color: 'text.primary',
               textDecoration: 'none',
             }}
           >
-            PawPal
+            PetPal
           </Typography>
 
-          {/* Desktop Menu */}
-          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' } }}>
-            {pages.map((page) => (
+          {/* Desktop Navigation */}
+          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, gap: 2 }}>
+            <Button
+              component={Link}
+              to="/"
+              onClick={handleCloseNavMenu}
+              sx={{
+                color: 'text.primary',
+                '&:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                }
+              }}
+            >
+              Home
+            </Button>
+            <Button
+              component={Link}
+              to="/gallery"
+              onClick={handleCloseNavMenu}
+              sx={{
+                color: 'text.primary',
+                '&:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                }
+              }}
+            >
+              Explore
+            </Button>
+            {user && (
               <Button
-                key={page.title}
                 component={Link}
-                to={page.path}
+                to="/posts/create"
                 onClick={handleCloseNavMenu}
-                sx={{ my: 2, color: 'white', display: 'block' }}
+                sx={{
+                  color: 'text.primary',
+                  '&:hover': {
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                  }
+                }}
               >
-                {page.title}
+                Create
               </Button>
-            ))}
+            )}
           </Box>
 
           {/* User Menu */}
@@ -162,7 +189,10 @@ const Navbar = () => {
                   <Avatar
                     alt={user.username}
                     src={user.profilePicture}
-                    sx={{ bgcolor: 'secondary.main' }}
+                    sx={{ 
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText'
+                    }}
                   >
                     {user.username?.charAt(0).toUpperCase()}
                   </Avatar>
@@ -183,26 +213,28 @@ const Navbar = () => {
                   open={Boolean(anchorElUser)}
                   onClose={handleCloseUserMenu}
                 >
-                  {settings.map((setting) => (
-                    <MenuItem
-                      key={setting.title}
-                      onClick={() => {
-                        setting.action();
-                        handleCloseUserMenu();
-                      }}
-                    >
-                      <Typography textAlign="center">{setting.title}</Typography>
-                    </MenuItem>
-                  ))}
+                  <MenuItem component={Link} to="/profile" onClick={handleCloseUserMenu}>
+                    <Typography>Profile</Typography>
+                  </MenuItem>
+                  <MenuItem onClick={handleLogout}>
+                    <Typography>Logout</Typography>
+                  </MenuItem>
                 </Menu>
               </>
             ) : (
-              <Box sx={{ display: 'flex', gap: 1 }}>
+              <Box sx={{ display: 'flex', gap: 2 }}>
                 <Button
                   component={Link}
                   to="/login"
                   variant="outlined"
-                  sx={{ color: 'white', borderColor: 'white' }}
+                  sx={{
+                    color: 'text.primary',
+                    borderColor: 'text.primary',
+                    '&:hover': {
+                      borderColor: 'text.primary',
+                      backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                    }
+                  }}
                 >
                   Login
                 </Button>
@@ -210,7 +242,13 @@ const Navbar = () => {
                   component={Link}
                   to="/register"
                   variant="contained"
-                  color="secondary"
+                  sx={{
+                    bgcolor: 'text.primary',
+                    color: 'background.paper',
+                    '&:hover': {
+                      bgcolor: 'text.secondary',
+                    }
+                  }}
                 >
                   Register
                 </Button>
