@@ -55,7 +55,7 @@ const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     // Check for user email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+password');
 
     if (user && (await user.matchPassword(password))) {
       res.json({

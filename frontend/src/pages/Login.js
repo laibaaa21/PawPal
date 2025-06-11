@@ -10,7 +10,6 @@ import {
   Alert,
 } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
-import { login as loginApi } from '../services/api';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -35,13 +34,14 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const userData = await loginApi(formData);
-      login(userData);
-      navigate('/profile');
+      const result = await login(formData.email, formData.password);
+      if (result.success) {
+        navigate('/profile');
+      } else {
+        setError(result.message);
+      }
     } catch (err) {
-      setError(
-        err.response?.data?.message || 'An error occurred during login'
-      );
+      setError('An error occurred during login');
     } finally {
       setLoading(false);
     }
