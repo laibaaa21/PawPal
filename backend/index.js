@@ -24,7 +24,13 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // Routes
 const authRoutes = require('./routes/auth');
+const postRoutes = require('./routes/posts');
+
 app.use('/api/auth', authRoutes);
+app.use('/api/posts', postRoutes);
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
