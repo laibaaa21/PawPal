@@ -14,6 +14,7 @@ import {
 import { Menu as MenuIcon, Pets } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import NotificationBell from '../notifications/NotificationBell';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -44,14 +45,21 @@ const Navbar = () => {
   };
 
   return (
-    <AppBar position="sticky">
+    <AppBar 
+      position="sticky" 
+      elevation={0}
+      sx={{ 
+        backgroundColor: '#E8E6E1',
+        borderBottom: '1px solid rgba(0,0,0,0.1)',
+      }}
+    >
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           {/* Logo - Desktop */}
           <Pets sx={{ 
             display: { xs: 'none', md: 'flex' }, 
             mr: 1,
-            color: 'text.primary'
+            color: '#FF7F50'
           }} />
           <Typography
             variant="h6"
@@ -62,11 +70,14 @@ const Navbar = () => {
               mr: 2,
               display: { xs: 'none', md: 'flex' },
               fontWeight: 700,
-              color: 'text.primary',
+              color: '#FF7F50',
               textDecoration: 'none',
+              '&:hover': {
+                color: '#FF6347',
+              }
             }}
           >
-            PetPal
+            PawPal
           </Typography>
 
           {/* Mobile Menu */}
@@ -77,7 +88,12 @@ const Navbar = () => {
               aria-controls="menu-appbar"
               aria-haspopup="true"
               onClick={handleOpenNavMenu}
-              color="inherit"
+              sx={{ 
+                color: '#FF7F50',
+                '&:hover': {
+                  backgroundColor: 'rgba(255,127,80,0.1)',
+                }
+              }}
             >
               <MenuIcon />
             </IconButton>
@@ -100,14 +116,14 @@ const Navbar = () => {
               }}
             >
               <MenuItem component={Link} to="/" onClick={handleCloseNavMenu}>
-                <Typography textAlign="center">Home</Typography>
+                <Typography textAlign="center" sx={{ color: '#FF7F50' }}>Home</Typography>
               </MenuItem>
               <MenuItem component={Link} to="/gallery" onClick={handleCloseNavMenu}>
-                <Typography textAlign="center">Explore</Typography>
+                <Typography textAlign="center" sx={{ color: '#FF7F50' }}>Explore</Typography>
               </MenuItem>
               {user && (
                 <MenuItem component={Link} to="/posts/create" onClick={handleCloseNavMenu}>
-                  <Typography textAlign="center">Create</Typography>
+                  <Typography textAlign="center" sx={{ color: '#FF7F50' }}>Create</Typography>
                 </MenuItem>
               )}
             </Menu>
@@ -117,7 +133,7 @@ const Navbar = () => {
           <Pets sx={{ 
             display: { xs: 'flex', md: 'none' }, 
             mr: 1,
-            color: 'text.primary'
+            color: '#FF7F50'
           }} />
           <Typography
             variant="h6"
@@ -129,11 +145,14 @@ const Navbar = () => {
               display: { xs: 'flex', md: 'none' },
               flexGrow: 1,
               fontWeight: 700,
-              color: 'text.primary',
+              color: '#FF7F50',
               textDecoration: 'none',
+              '&:hover': {
+                color: '#FF6347',
+              }
             }}
           >
-            PetPal
+            PawPal
           </Typography>
 
           {/* Desktop Navigation */}
@@ -143,9 +162,10 @@ const Navbar = () => {
               to="/"
               onClick={handleCloseNavMenu}
               sx={{
-                color: 'text.primary',
+                color: '#FF7F50',
                 '&:hover': {
-                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                  backgroundColor: 'rgba(255,127,80,0.1)',
+                  color: '#FF6347',
                 }
               }}
             >
@@ -156,9 +176,10 @@ const Navbar = () => {
               to="/gallery"
               onClick={handleCloseNavMenu}
               sx={{
-                color: 'text.primary',
+                color: '#FF7F50',
                 '&:hover': {
-                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                  backgroundColor: 'rgba(255,127,80,0.1)',
+                  color: '#FF6347',
                 }
               }}
             >
@@ -170,9 +191,10 @@ const Navbar = () => {
                 to="/posts/create"
                 onClick={handleCloseNavMenu}
                 sx={{
-                  color: 'text.primary',
+                  color: '#FF7F50',
                   '&:hover': {
-                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                    backgroundColor: 'rgba(255,127,80,0.1)',
+                    color: '#FF6347',
                   }
                 }}
               >
@@ -182,16 +204,17 @@ const Navbar = () => {
           </Box>
 
           {/* User Menu */}
-          <Box sx={{ flexGrow: 0 }}>
+          <Box sx={{ flexGrow: 0, display: 'flex', alignItems: 'center', gap: 2 }}>
             {user ? (
               <>
+                <NotificationBell />
                 <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
                   <Avatar
                     alt={user.username}
                     src={user.profilePicture}
                     sx={{ 
-                      bgcolor: 'primary.main',
-                      color: 'primary.contrastText'
+                      bgcolor: '#FF7F50',
+                      color: 'white'
                     }}
                   >
                     {user.username?.charAt(0).toUpperCase()}
@@ -214,10 +237,10 @@ const Navbar = () => {
                   onClose={handleCloseUserMenu}
                 >
                   <MenuItem component={Link} to="/profile" onClick={handleCloseUserMenu}>
-                    <Typography>Profile</Typography>
+                    <Typography sx={{ color: '#FF7F50' }}>Profile</Typography>
                   </MenuItem>
                   <MenuItem onClick={handleLogout}>
-                    <Typography>Logout</Typography>
+                    <Typography sx={{ color: '#FF7F50' }}>Logout</Typography>
                   </MenuItem>
                 </Menu>
               </>
@@ -228,11 +251,12 @@ const Navbar = () => {
                   to="/login"
                   variant="outlined"
                   sx={{
-                    color: 'text.primary',
-                    borderColor: 'text.primary',
+                    color: '#FF7F50',
+                    borderColor: '#FF7F50',
                     '&:hover': {
-                      borderColor: 'text.primary',
-                      backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                      borderColor: '#FF6347',
+                      backgroundColor: 'rgba(255,127,80,0.1)',
+                      color: '#FF6347',
                     }
                   }}
                 >
@@ -243,10 +267,10 @@ const Navbar = () => {
                   to="/register"
                   variant="contained"
                   sx={{
-                    bgcolor: 'text.primary',
-                    color: 'background.paper',
+                    bgcolor: '#FF7F50',
+                    color: 'white',
                     '&:hover': {
-                      bgcolor: 'text.secondary',
+                      bgcolor: '#FF6347',
                     }
                   }}
                 >

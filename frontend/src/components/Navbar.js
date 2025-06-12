@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import PetsIcon from '@mui/icons-material/Pets';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from './notifications/NotificationBell';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -50,51 +51,54 @@ const Navbar = () => {
 
         <Box sx={{ flexGrow: 1 }} />
 
-        {user ? (
-          <>
-            <Button
-              color="inherit"
-              component={RouterLink}
-              to="/create-post"
-              sx={{ mr: 2 }}
-            >
-              Create Post
-            </Button>
-            <IconButton
-              component={RouterLink}
-              to="/profile"
-              sx={{ mr: 2 }}
-            >
-              <Avatar
-                alt={user.username}
-                src={user.profilePicture}
-                sx={{ width: 32, height: 32 }}
-              />
-            </IconButton>
-            <Button color="inherit" onClick={handleLogout}>
-              Logout
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button
-              color="inherit"
-              component={RouterLink}
-              to="/login"
-              sx={{ mr: 1 }}
-            >
-              Login
-            </Button>
-            <Button
-              color="inherit"
-              component={RouterLink}
-              to="/register"
-              variant="outlined"
-            >
-              Register
-            </Button>
-          </>
-        )}
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <NotificationBell />
+          {user ? (
+            <>
+              <Button
+                color="inherit"
+                component={RouterLink}
+                to="/create-post"
+                sx={{ mr: 2 }}
+              >
+                Create Post
+              </Button>
+              <IconButton
+                component={RouterLink}
+                to="/profile"
+                sx={{ mr: 2 }}
+              >
+                <Avatar
+                  alt={user.username}
+                  src={user.profilePicture}
+                  sx={{ width: 32, height: 32 }}
+                />
+              </IconButton>
+              <Button color="inherit" onClick={handleLogout}>
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                color="inherit"
+                component={RouterLink}
+                to="/login"
+                sx={{ mr: 1 }}
+              >
+                Login
+              </Button>
+              <Button
+                color="inherit"
+                component={RouterLink}
+                to="/register"
+                variant="outlined"
+              >
+                Register
+              </Button>
+            </>
+          )}
+        </Box>
       </Toolbar>
     </AppBar>
   );
