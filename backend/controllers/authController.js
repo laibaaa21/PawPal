@@ -53,24 +53,41 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log('Login attempt for email:', email);
 
-    // Check for user email
+    // Check for user email and explicitly select password
     const user = await User.findOne({ email }).select('+password');
+    console.log('User found:', user ? 'Yes' : 'No');
 
-    if (user && (await user.matchPassword(password))) {
-      res.json({
-        _id: user._id,
-        username: user.username,
-        email: user.email,
-        profilePicture: user.profilePicture,
-        bio: user.bio,
-        token: generateToken(user._id),
-      });
-    } else {
-      res.status(401).json({ message: 'Invalid email or password' });
+    if (!user) {
+      console.log('No user found with this email');
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
+
+    // Check password
+    const isMatch = await user.matchPassword(password);
+    console.log('Password match:', isMatch ? 'Yes' : 'No');
+
+    if (!isMatch) {
+      console.log('Password does not match');
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Generate token
+    const token = generateToken(user._id);
+    console.log('Token generated successfully');
+
+    // Send response
+    res.json({
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      profilePicture: user.profilePicture,
+      bio: user.bio,
+      token
+    });
   } catch (error) {
-    console.error(error);
+    console.error('Login error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
