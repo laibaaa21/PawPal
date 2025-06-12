@@ -393,25 +393,39 @@ const Profile = () => {
             backdropFilter: 'blur(10px)',
           }}
         >
-          {/* Profile Header */}
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+          {/* User Info Section */}
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center',
+            mb: 4
+          }}>
             <Avatar
               src={user?.profilePicture}
-              sx={{
-                width: 100,
-                height: 100,
-                mr: 3,
-                border: '3px solid #FF7F50',
-              }}
+              sx={{ width: 150, height: 150, mb: 2 }}
             />
-            <Box>
-              <Typography variant="h4" component="h1" gutterBottom>
-                {user?.username}
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                {user?.email}
-              </Typography>
-            </Box>
+            <Typography variant="h5" gutterBottom>
+              {user?.username}
+            </Typography>
+            <Typography variant="body1" color="text.secondary" gutterBottom>
+              {user?.email}
+            </Typography>
+            <Button
+              startIcon={<Edit />}
+              variant="outlined"
+              sx={{ 
+                mt: 1,
+                color: '#FF7F50',
+                borderColor: '#FF7F50',
+                '&:hover': {
+                  borderColor: '#FF6347',
+                  backgroundColor: 'rgba(255,127,80,0.1)',
+                }
+              }}
+              onClick={() => setEditDialogOpen(true)}
+            >
+              Edit Profile
+            </Button>
           </Box>
 
           {/* Tabs */}
