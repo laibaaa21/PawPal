@@ -5,16 +5,16 @@ PawPal is a social media platform designed specifically for pet lovers to share 
 ## Features
 
 ### 1. User Authentication
-![Signup Page](public/images/signup.png)
-![Login Page](public/images/login.png)
+![Signup Page](frontend/public/images/signup.png)
+![Login Page](frontend/public/images/login.png)
 - Secure registration and login system
 - Profile management with customizable bio
 - Password change functionality
 - Profile picture support
 
 ### 2. Home/Gallery Page
-![Home Page](public/images/home.png)
-![Gallery Page](public/images/gallery.png)
+![Home Page](frontend/public/images/home.png)
+![Gallery Page](frontend/public/images/gallery.png)
 - Dynamic feed of pet posts
 - Advanced filtering options:
   - Search by breed
@@ -24,7 +24,7 @@ PawPal is a social media platform designed specifically for pet lovers to share 
 - Interactive post cards with animations
 
 ### 3. Create Post Page
-![Create Post Page](public/images/create-post.png)
+![Create Post Page](frontend/public/images/create-post.png)
 - Image upload functionality
 - Form fields for:
   - Title
@@ -35,8 +35,8 @@ PawPal is a social media platform designed specifically for pet lovers to share 
 - Animated pet bubbles for visual appeal
 
 ### 4. Profile Page
-![Profile1 Page](public/images/profile1.png)
-![Profile2 Page](public/images/profile2.png)
+![Profile1 Page](frontend/public/images/profile1.png)
+![Profile2 Page](frontend/public/images/profile2.png)
 - User information display
 - Stats overview:
   - Total posts
