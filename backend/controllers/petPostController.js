@@ -1,4 +1,6 @@
+const User = require('../models/User');
 const PetPost = require('../models/PetPost');
+const Notification = require('../models/Notification');
 const { uploadToCloudinary } = require('../utils/upload');
 
 // @desc    Create new pet post
@@ -40,7 +42,7 @@ const getPosts = async (req, res) => {
       breed,
       tags,
       search,
-      sort = '-createdAt', // default sort by newest
+      sort = 'newest',
       page = 1,
       limit = 10
     } = req.query;
@@ -49,7 +51,7 @@ const getPosts = async (req, res) => {
     const filter = {};
 
     if (breed) {
-      filter.breed = { $regex: breed, $options: 'i' }; // case-insensitive search
+      filter.breed = { $regex: breed, $options: 'i' };
     }
 
     if (tags) {
@@ -64,33 +66,68 @@ const getPosts = async (req, res) => {
       ];
     }
 
-    // Build sort object
-    let sortOption = {};
+    let sortQuery = {};
     switch (sort) {
-      case 'likes':
-        sortOption = { 'likes.length': -1, createdAt: -1 };
-        break;
       case 'oldest':
-        sortOption = { createdAt: 1 };
+        sortQuery = { createdAt: 1 };
         break;
-      default: // 'newest'
-        sortOption = { createdAt: -1 };
+      case 'likes':
+        const posts = await PetPost.aggregate([
+          { $match: filter },
+          {
+            $addFields: {
+              likesCount: { $size: "$likes" }
+            }
+          },
+          { $sort: { likesCount: -1, createdAt: -1 } },
+          { $skip: (page - 1) * limit },
+          { $limit: Number(limit) },
+        ]);
+
+        await PetPost.populate(posts, [
+          { path: 'user', select: 'username profilePicture' },
+          { path: 'comments.user', select: 'username profilePicture' }
+        ]);
+
+        const total = await PetPost.countDocuments(filter);
+
+        return res.json({
+          posts,
+          totalPosts: total,
+          totalPages: Math.ceil(total / limit),
+          currentPage: Number(page),
+          filters: {
+            breeds: await PetPost.distinct('breed'),
+            tags: await PetPost.distinct('tags')
+          }
+        });
+      case 'newest':
+      default:
+        sortQuery = { createdAt: -1 };
+        break;
     }
 
-    // Calculate pagination
-    const skip = (page - 1) * limit;
+    const posts = await PetPost.find(filter)
+      .populate('user', 'username profilePicture')
+      .populate({
+        path: 'comments',
+        populate: [
+          {
+            path: 'user',
+            select: 'username profilePicture'
+          },
+          {
+            path: 'replies.user',
+            select: 'username profilePicture'
+          }
+        ]
+      })
+      .sort(sortQuery)
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
 
-    // Execute query
-    const [posts, total] = await Promise.all([
-      PetPost.find(filter)
-        .populate('user', 'username profilePicture')
-        .sort(sortOption)
-        .skip(skip)
-        .limit(Number(limit)),
-      PetPost.countDocuments(filter)
-    ]);
+    const total = await PetPost.countDocuments(filter);
 
-    // Get unique breeds and tags for filters
     const [breeds, allTags] = await Promise.all([
       PetPost.distinct('breed'),
       PetPost.distinct('tags')
@@ -98,12 +135,9 @@ const getPosts = async (req, res) => {
 
     res.json({
       posts,
-      pagination: {
-        total,
-        pages: Math.ceil(total / limit),
-        page: Number(page),
-        limit: Number(limit)
-      },
+      totalPosts: total,
+      totalPages: Math.ceil(total / limit),
+      currentPage: Number(page),
       filters: {
         breeds,
         tags: allTags
@@ -146,14 +180,12 @@ const updatePost = async (req, res) => {
       return res.status(404).json({ message: 'Post not found' });
     }
 
-    // Check user ownership
     if (post.user.toString() !== req.user._id.toString()) {
       return res.status(401).json({ message: 'User not authorized' });
     }
 
     let imageUrl = post.imageUrl;
     if (req.file) {
-      // Upload new image to Cloudinary
       const result = await uploadToCloudinary(req.file.path);
       imageUrl = result.secure_url;
     }
@@ -188,7 +220,6 @@ const deletePost = async (req, res) => {
       return res.status(404).json({ message: 'Post not found' });
     }
 
-    // Check user ownership
     if (post.user.toString() !== req.user._id.toString()) {
       return res.status(401).json({ message: 'User not authorized' });
     }
@@ -214,8 +245,20 @@ const toggleLike = async (req, res) => {
 
     const likeIndex = post.likes.indexOf(req.user._id);
     if (likeIndex === -1) {
+      // Like post
       post.likes.push(req.user._id);
+      
+      // Create notification for post like
+      if (post.user.toString() !== req.user._id.toString()) {
+        await Notification.create({
+          recipient: post.user,
+          sender: req.user._id,
+          type: 'like',
+          post: post._id
+        });
+      }
     } else {
+      // Unlike post
       post.likes.splice(likeIndex, 1);
     }
 
@@ -243,9 +286,24 @@ const addComment = async (req, res) => {
       content: req.body.content,
     });
 
+    // Create notification for comment
+    if (post.user.toString() !== req.user._id.toString()) {
+      await Notification.create({
+        recipient: post.user,
+        sender: req.user._id,
+        type: 'comment',
+        post: post._id
+      });
+    }
+
     await post.save();
     
-    const populatedPost = await post.populate('comments.user', 'username profilePicture');
+    const populatedPost = await post.populate([
+      { path: 'comments.user', select: 'username profilePicture' },
+      { path: 'comments.replies.user', select: 'username profilePicture' },
+      { path: 'user', select: 'username profilePicture' }
+    ]);
+    
     res.json(populatedPost);
   } catch (error) {
     console.error(error);
@@ -260,12 +318,267 @@ const getUserPosts = async (req, res) => {
   try {
     const posts = await PetPost.find({ user: req.params.userId })
       .populate('user', 'username profilePicture')
+      .populate({
+        path: 'comments',
+        populate: [
+          {
+            path: 'user',
+            select: 'username profilePicture'
+          },
+          {
+            path: 'replies.user',
+            select: 'username profilePicture'
+          }
+        ]
+      })
       .sort({ createdAt: -1 });
 
     res.json(posts);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error fetching user posts' });
+  }
+};
+
+// @desc    Edit comment
+// @route   PUT /api/posts/:id/comment/:commentId
+// @access  Private
+const editComment = async (req, res) => {
+  try {
+    const post = await PetPost.findById(req.params.id);
+
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const comment = post.comments.id(req.params.commentId);
+
+    if (!comment) {
+      return res.status(404).json({ message: 'Comment not found' });
+    }
+
+    if (comment.user.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ message: 'User not authorized' });
+    }
+
+    comment.content = req.body.content;
+    await post.save();
+    
+    const populatedPost = await post.populate([
+      { path: 'comments.user', select: 'username profilePicture' },
+      { path: 'user', select: 'username profilePicture' }
+    ]);
+    
+    res.json(populatedPost);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error editing comment' });
+  }
+};
+
+// @desc    Delete comment
+// @route   DELETE /api/posts/:id/comment/:commentId
+// @access  Private
+const deleteComment = async (req, res) => {
+  try {
+    const post = await PetPost.findById(req.params.id);
+
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const comment = post.comments.id(req.params.commentId);
+
+    if (!comment) {
+      return res.status(404).json({ message: 'Comment not found' });
+    }
+
+    if (comment.user.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ message: 'User not authorized' });
+    }
+
+    post.comments.pull({ _id: req.params.commentId });
+    await post.save();
+    
+    const populatedPost = await post.populate([
+      { path: 'comments.user', select: 'username profilePicture' },
+      { path: 'user', select: 'username profilePicture' }
+    ]);
+    
+    res.json(populatedPost);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error deleting comment' });
+  }
+};
+
+// @desc    Get saved posts
+// @route   GET /api/posts/saved
+// @access  Private
+const getSavedPosts = async (req, res) => {
+  try {
+    const posts = await PetPost.find({ savedBy: req.user._id })
+      .populate('user', 'username profilePicture')
+      .sort({ createdAt: -1 });
+
+    res.json(posts || []);
+  } catch (error) {
+    console.error('Error in getSavedPosts:', error);
+    res.status(500).json({ message: 'Error fetching saved posts' });
+  }
+};
+
+// @desc    Save/Unsave post
+// @route   PUT /api/posts/:id/save
+// @access  Private
+const toggleSave = async (req, res) => {
+  try {
+    const post = await PetPost.findById(req.params.id);
+    
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const saveIndex = post.savedBy.indexOf(req.user._id);
+    
+    if (saveIndex === -1) {
+      post.savedBy.push(req.user._id);
+    } else {
+      post.savedBy.splice(saveIndex, 1);
+    }
+
+    await post.save();
+    await post.populate('user', 'username profilePicture');
+    
+    res.json(post);
+  } catch (error) {
+    console.error('Error in toggleSave:', error);
+    res.status(500).json({ message: 'Error toggling save status' });
+  }
+};
+
+// @desc    Add reply to comment
+// @route   POST /api/pet-posts/:id/comment/:commentId/reply
+// @access  Private
+const addReply = async (req, res) => {
+  try {
+    const post = await PetPost.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const comment = post.comments.id(req.params.commentId);
+    if (!comment) {
+      return res.status(404).json({ message: 'Comment not found' });
+    }
+
+    comment.replies.unshift({
+      user: req.user._id,
+      content: req.body.content,
+    });
+
+    // Create notification for reply
+    if (comment.user.toString() !== req.user._id.toString()) {
+      await Notification.create({
+        recipient: comment.user,
+        sender: req.user._id,
+        type: 'reply',
+        post: post._id
+      });
+    }
+
+    await post.save();
+    
+    const populatedPost = await post.populate([
+      { path: 'comments.user', select: 'username profilePicture' },
+      { path: 'comments.replies.user', select: 'username profilePicture' },
+      { path: 'user', select: 'username profilePicture' }
+    ]);
+    
+    res.json(populatedPost);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error adding reply' });
+  }
+};
+
+// @desc    Edit reply
+// @route   PUT /api/posts/:id/comment/:commentId/reply/:replyId
+// @access  Private
+const editReply = async (req, res) => {
+  try {
+    const post = await PetPost.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const comment = post.comments.id(req.params.commentId);
+    if (!comment) {
+      return res.status(404).json({ message: 'Comment not found' });
+    }
+
+    const reply = comment.replies.id(req.params.replyId);
+    if (!reply) {
+      return res.status(404).json({ message: 'Reply not found' });
+    }
+
+    if (reply.user.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ message: 'User not authorized' });
+    }
+
+    reply.content = req.body.content;
+    await post.save();
+
+    const populatedPost = await post.populate([
+      { path: 'comments.user', select: 'username profilePicture' },
+      { path: 'comments.replies.user', select: 'username profilePicture' },
+      { path: 'user', select: 'username profilePicture' }
+    ]);
+
+    res.json(populatedPost);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error editing reply' });
+  }
+};
+
+// @desc    Delete reply
+// @route   DELETE /api/posts/:id/comment/:commentId/reply/:replyId
+// @access  Private
+const deleteReply = async (req, res) => {
+  try {
+    const post = await PetPost.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const comment = post.comments.id(req.params.commentId);
+    if (!comment) {
+      return res.status(404).json({ message: 'Comment not found' });
+    }
+
+    const reply = comment.replies.id(req.params.replyId);
+    if (!reply) {
+      return res.status(404).json({ message: 'Reply not found' });
+    }
+
+    if (reply.user.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ message: 'User not authorized' });
+    }
+
+    comment.replies.pull({ _id: req.params.replyId });
+    await post.save();
+
+    const populatedPost = await post.populate([
+      { path: 'comments.user', select: 'username profilePicture' },
+      { path: 'comments.replies.user', select: 'username profilePicture' },
+      { path: 'user', select: 'username profilePicture' }
+    ]);
+
+    res.json(populatedPost);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error deleting reply' });
   }
 };
 
@@ -278,4 +591,11 @@ module.exports = {
   toggleLike,
   addComment,
   getUserPosts,
-}; 
+  editComment,
+  deleteComment,
+  getSavedPosts,
+  toggleSave,
+  addReply,
+  editReply,
+  deleteReply,
+};
