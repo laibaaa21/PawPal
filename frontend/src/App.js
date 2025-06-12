@@ -5,6 +5,9 @@ import CssBaseline from '@mui/material/CssBaseline';
 import theme from './theme';
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/auth/PrivateRoute';
+import { AnimatePresence } from 'framer-motion';
+import LoadingSpinner from './components/LoadingSpinner';
+import ScrollToTop from './components/ScrollToTop';
 
 // Pages
 import Home from './pages/Home';
@@ -22,36 +25,39 @@ function App() {
       <CssBaseline />
       <AuthProvider>
         <Navbar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/gallery" element={<PetGallery />} />
-          <Route
-            path="/profile"
-            element={
-              <PrivateRoute>
-                <Profile />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/posts/create"
-            element={
-              <PrivateRoute>
-                <CreatePost />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/posts/edit/:id"
-            element={
-              <PrivateRoute>
-                <EditPost />
-              </PrivateRoute>
-            }
-          />
-        </Routes>
+        <AnimatePresence mode="wait">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/gallery" element={<PetGallery />} />
+            <Route
+              path="/profile"
+              element={
+                <PrivateRoute>
+                  <Profile />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/posts/create"
+              element={
+                <PrivateRoute>
+                  <CreatePost />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/posts/edit/:id"
+              element={
+                <PrivateRoute>
+                  <EditPost />
+                </PrivateRoute>
+              }
+            />
+          </Routes>
+        </AnimatePresence>
+        <ScrollToTop />
       </AuthProvider>
     </ThemeProvider>
   );
