@@ -42,10 +42,29 @@ const petPostSchema = new mongoose.Schema({
       type: String,
       required: true,
     },
+    replies: [{
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+      },
+      content: {
+        type: String,
+        required: true,
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
+    }],
     createdAt: {
       type: Date,
       default: Date.now,
     },
+  }],
+  savedBy: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }],
 }, {
   timestamps: true,
