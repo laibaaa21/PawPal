@@ -1,6 +1,13 @@
+const mongoose = require('mongoose');
 const Post = require('../models/Post');
 const cloudinary = require('../config/cloudinary');
 const { uploadToCloudinary } = require('../utils/upload');
+const Notification = require('../models/Notification');
+
+// Make sure Post model is registered
+if (!mongoose.models.Post) {
+  mongoose.model('Post', require('../models/Post').schema);
+}
 
 // @desc    Create a new post
 // @route   POST /api/posts
@@ -103,6 +110,10 @@ const getSavedPosts = async (req, res) => {
       .populate('user', 'username profilePicture')
       .sort({ createdAt: -1 });
 
+    if (!posts) {
+      return res.json([]);
+    }
+
     res.json(posts);
   } catch (error) {
     console.error('Error in getSavedPosts:', error);
@@ -191,6 +202,16 @@ const toggleLike = async (req, res) => {
     if (likeIndex === -1) {
       // Like post
       post.likes.push(req.user._id);
+      
+      // Create notification for post like
+      if (post.user.toString() !== req.user._id.toString()) {
+        await Notification.create({
+          recipient: post.user,
+          sender: req.user._id,
+          type: 'like',
+          post: post._id
+        });
+      }
     } else {
       // Unlike post
       post.likes.splice(likeIndex, 1);
@@ -205,7 +226,7 @@ const toggleLike = async (req, res) => {
 };
 
 // @desc    Save/Unsave post
-// @route   POST /api/posts/:id/save
+// @route   POST/DELETE /api/posts/:id/save
 // @access  Private
 const toggleSave = async (req, res) => {
   try {
@@ -216,20 +237,58 @@ const toggleSave = async (req, res) => {
     }
 
     const saveIndex = post.savedBy.indexOf(req.user._id);
-
-    if (saveIndex === -1) {
+    
+    if (req.method === 'POST' && saveIndex === -1) {
       // Save post
       post.savedBy.push(req.user._id);
-    } else {
+    } else if (req.method === 'DELETE' && saveIndex > -1) {
       // Unsave post
       post.savedBy.splice(saveIndex, 1);
     }
 
     await post.save();
+    // Populate necessary fields before sending response
+    await post.populate('user', 'username profilePicture');
+    
     res.json(post);
   } catch (error) {
     console.error('Error in toggleSave:', error);
-    res.status(500).json({ message: 'Error toggling save' });
+    res.status(500).json({ message: 'Error toggling save status' });
+  }
+};
+
+// @desc    Add comment to post
+// @route   POST /api/posts/:id/comments
+// @access  Private
+const addComment = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+
+    const comment = {
+      user: req.user._id,
+      content: req.body.content
+    };
+
+    post.comments.unshift(comment);
+    
+    // Create notification for comment
+    if (post.user.toString() !== req.user._id.toString()) {
+      await Notification.create({
+        recipient: post.user,
+        sender: req.user._id,
+        type: 'comment',
+        post: post._id
+      });
+    }
+
+    await post.save();
+    res.json(post);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -241,5 +300,6 @@ module.exports = {
   updatePost,
   deletePost,
   toggleLike,
-  toggleSave
+  toggleSave,
+  addComment
 }; 

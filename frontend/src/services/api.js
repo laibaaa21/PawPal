@@ -10,14 +10,37 @@ const api = axios.create({
   },
 });
 
-// Add auth token to requests if it exists
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+// Add request interceptor for debugging
+api.interceptors.request.use(
+  (config) => {
+    console.log('API Request:', {
+      url: config.url,
+      method: config.method,
+      headers: config.headers,
+    });
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    console.error('API Request Error:', error);
+    return Promise.reject(error);
   }
-  return config;
-});
+);
+
+// Add response interceptor for debugging
+api.interceptors.response.use(
+  (response) => {
+    console.log('API Response:', response.data);
+    return response;
+  },
+  (error) => {
+    console.error('API Response Error:', error.response?.data);
+    return Promise.reject(error);
+  }
+);
 
 // Auth endpoints
 export const register = async (userData) => {
@@ -89,13 +112,13 @@ export const unsavePost = async (postId) => {
   return response.data;
 };
 
-export const getUserPosts = async (userId) => {
-  const response = await api.get(`/posts/user/${userId}`);
+export const getSavedPosts = async () => {
+  const response = await api.get('/posts/saved');
   return response.data;
 };
 
-export const getSavedPosts = async () => {
-  const response = await api.get('/posts/saved');
+export const getUserPosts = async (userId) => {
+  const response = await api.get(`/posts/user/${userId}`);
   return response.data;
 };
 
@@ -111,6 +134,23 @@ export const updateProfile = async (profileData) => {
 
 export const changePassword = async (passwordData) => {
   const response = await api.put('/auth/change-password', passwordData);
+  return response.data;
+};
+
+// Reply to comment
+export const replyToComment = async (postId, commentId, content) => {
+  const response = await api.post(`/posts/${postId}/comment/${commentId}/reply`, { content });
+  return response.data;
+};
+
+// Notification endpoints
+export const getNotifications = async () => {
+  const response = await api.get('/notifications');
+  return response.data;
+};
+
+export const markNotificationAsRead = async (notificationId) => {
+  const response = await api.put(`/notifications/${notificationId}/read`);
   return response.data;
 };
 

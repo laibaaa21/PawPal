@@ -25,9 +25,11 @@ mongoose.connect(process.env.MONGODB_URI)
 // Routes
 const authRoutes = require('./routes/auth');
 const petPostRoutes = require('./routes/petPosts');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', petPostRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

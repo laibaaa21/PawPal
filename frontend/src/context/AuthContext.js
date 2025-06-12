@@ -40,7 +40,10 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      console.log('Attempting login with:', { email }); // Don't log password
       const response = await api.post('/auth/login', { email, password });
+      console.log('Login response:', response.data);
+      
       const { token, ...userData } = response.data;
       
       localStorage.setItem('token', token);
@@ -49,7 +52,7 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('Login error details:', error.response?.data);
       return {
         success: false,
         message: error.response?.data?.message || 'Login failed'
